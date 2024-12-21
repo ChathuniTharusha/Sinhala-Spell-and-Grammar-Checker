@@ -32,9 +32,7 @@ class GrammarChecker:
     def check_grammar(self, sentence):
         sentence_vec = self.vectorizer.transform([sentence])
         prediction = self.model.predict(sentence_vec)
-        probabilities = self.model.predict_proba(sentence_vec)
         print(f"Sentence: {sentence}")
-        print(f"Probabilities: {probabilities}")
         if prediction[0] == 1:
             print(f"Prediction: Correct")
             return "Correct"
