@@ -1,23 +1,52 @@
-import pandas as pd
-from nltk.metrics.distance import edit_distance
+import csv
+import difflib
 
+# Function to load the dictionary from a CSV file
+def load_dictionary_from_csv(file_path):
+    dictionary = set()
+    with open(file_path, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        header = next(reader)  # Skip header if there is one
+        for row in reader:
+            word = row[0].strip()  # Assuming the word is in the first column
+            dictionary.add(word)
+    return dictionary
 
-class SpellChecker:
-    def __init__(self, dataset_path):
-        # Load the dataset
-        self.data = pd.read_csv(dataset_path, encoding='utf-8-sig')
-        # Extract correct words
-        self.correct_words = self.data[self.data['Label'] == 1]['Word'].tolist()
+# Function to suggest corrections for a misspelled word
+def suggest_correction(misspelled_word, dictionary):
+    # Use difflib to find the closest matches in the dictionary
+    suggestions = difflib.get_close_matches(misspelled_word, dictionary, n=5, cutoff=0.8)
+    return suggestions
 
-    def correct_word(self, word):
-        if word in self.correct_words:
-            return word  # Word is already correct
-        suggestions = sorted(self.correct_words, key=lambda w: edit_distance(word, w))
-        if suggestions and edit_distance(word, suggestions[0]) <= 2:  # Threshold for correction
-            return suggestions[0]
-        return word  # Return the original word if no suitable correction is found
+# Function to process the paragraph and suggest corrections
+def process_paragraph(paragraph, dictionary):
+    # Split the paragraph into words using space as the separator
+    words = paragraph.split()
 
-    def correct_text(self, sentence):
-        words = sentence.split()
-        corrected_words = [self.correct_word(word) for word in words]
-        return ' '.join(corrected_words)
+    misspelled_words = {}
+
+    for word in words:
+        if word not in dictionary:
+            suggestions = suggest_correction(word, dictionary)
+            if suggestions:
+                misspelled_words[word] = suggestions
+
+    return misspelled_words
+
+# Function to print the suggestions for a given paragraph
+def check_spelling_and_print(paragraph, dictionary_file='data/preprocessed_dictionary.csv'):
+    # Load the dictionary from the CSV file
+    dictionary = load_dictionary_from_csv(dictionary_file)
+
+    # Process the paragraph and get misspelled words with suggestions
+    misspelled_words = process_paragraph(paragraph, dictionary)
+
+    if misspelled_words:
+        print("Misspelled words and suggestions:")
+        for word, suggestions in misspelled_words.items():
+            print(f"Word: {word}")
+            print("Did you mean:")
+            for suggestion in suggestions:
+                print(f"  - {suggestion}")
+    else:
+        print("No misspelled words found. The paragraph seems correct.")
