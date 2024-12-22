@@ -24,23 +24,49 @@ class GrammarChecker:
         self.model = LogisticRegression(class_weight='balanced', random_state=42)
         self.model.fit(X_train_vec, y_train)
 
-        # Evaluate the model
-        y_pred = self.model.predict(X_test_vec)
-        print("Grammar Checker Model Accuracy:", accuracy_score(y_test, y_pred))
-        print("Classification Report:\n", classification_report(y_test, y_pred))
+    def apply_advanced_rules(self, sentence):
+        """
+        Apply grammar rules based on subject and verb endings.
+        """
+        # Define rules for specific subjects
+        subject_rules = {
+            "අපි": "මු",
+            "මම": "මි",
+            "ඔහු": "යි",
+            "ඇය": "යි",
+            "ඔවුන්": "යි",
+        }
+
+        # Check if the sentence starts with a defined subject
+        for subject, correct_ending in subject_rules.items():
+            if sentence.startswith(subject):
+                words = sentence.split()
+                if len(words) > 1:  # Ensure there's a verb to process
+                    verb = words[-1].rstrip(".")  # Remove period for processing
+                    if not verb.endswith(correct_ending):
+                        corrected_verb = verb.rstrip("මුමියි.") + correct_ending
+                        corrected_sentence = " ".join(words[:-1] + [corrected_verb]) + "."
+                        return False, (
+                            f"If the sentence starts with '{subject}', it should end with '{correct_ending}'."
+                        ), corrected_sentence
+
+        return True, None, sentence
 
     def check_grammar(self, sentence):
         """
-        Check grammar using an ML-based approach.
+        Check grammar using rule-based and ML-based approaches.
         """
-        # Transform the sentence into a feature vector
-        sentence_vec = self.vectorizer.transform([sentence])
+        # Step 1: Apply rules
+        valid, message, corrected_sentence = self.apply_advanced_rules(sentence)
+        if not valid:
+            return f"Rule Violation: {message}\nSuggested Correction: {corrected_sentence}"
 
-        # Predict using the trained model
+        # Step 2: Apply ML-based grammar checking
+        sentence_vec = self.vectorizer.transform([corrected_sentence])
         prediction = self.model.predict(sentence_vec)
 
-        # Return result based on the prediction
         if prediction[0] == 1:
             return "Correct"
         else:
-            return "Incorrect (ML-Based)"
+            return f"Incorrect (ML-Based). Sentence: {corrected_sentence}"
+
