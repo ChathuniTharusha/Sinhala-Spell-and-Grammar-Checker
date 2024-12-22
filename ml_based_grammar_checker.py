@@ -51,10 +51,16 @@ class MLBasedGrammarChecker:
 if __name__ == "__main__":
     ml_checker = MLBasedGrammarChecker()
     sentences = [
-        "අපි ගමනට ගියේය.",  # Predicted result
-        "අපි ගමට ගියමු.",  # Predicted result
-        "මම පොත කියවයි.",  # Predicted result
-        "මම ගමට ගියමි."  # Predicted result
+        "අපි ගමට ගියෙය",
+"ඔහු පාසලට ගියෙය",
+"මම පොතක් කියවයි",
+"ඇය ගෙදරට ආවා",
+"ඔවුන් ගමනක් සූදානම් කළා",
+"අපි ආහාර සකසා ගත්තෙමු",
+"මගේ මිතුරා කාමරයේ සිටියා",
+"ඔවුන් ගමක නතර විය",
+"අපි වත්තෙ කටයුත්තක් කළා",
+"ඇය පොතක් උගන්වමින් සිටියෙය"
     ]
 
     for sentence in sentences:

@@ -11,9 +11,17 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 def apply_basic_rules(sentence):
     """
-    Apply basic grammar rules to the sentence.
+    Apply expanded basic grammar rules to the sentence.
+    Checks for:
+    1. Subject-Verb agreement
+    2. Word order
+    3. Tense consistency
+    4. Punctuation usage
     """
-    # Define rules for specific subjects and their correct endings
+    corrections = []
+    corrected_sentence = sentence  # Initialize with the original sentence
+
+    # Rule 1: Subject-Verb Agreement
     subject_rules = {
         "අපි": "මු.",
         "මම": "මි.",
@@ -21,8 +29,6 @@ def apply_basic_rules(sentence):
         "ඇය": "යි.",
         "ඔවුන්": "යි."
     }
-
-    # Check if the sentence starts with a defined subject
     for subject, correct_ending in subject_rules.items():
         if sentence.startswith(subject):
             words = sentence.split()
@@ -31,11 +37,49 @@ def apply_basic_rules(sentence):
                 if not verb.endswith(correct_ending.rstrip(".")):
                     corrected_verb = verb.rstrip("මුමියි.") + correct_ending.rstrip(".")
                     corrected_sentence = " ".join(words[:-1] + [corrected_verb]) + "."
-                    return False, (
+                    corrections.append(
                         f"If the sentence starts with '{subject}', it should end with '{correct_ending}'."
-                    ), corrected_sentence
+                    )
 
-    return True, None, sentence
+    # Rule 2: Word Order (Simple Subject-Verb-Object structure)
+    words = sentence.split()
+    if len(words) >= 3:  # Simple check for at least three words (SVO)
+        subject = words[0]
+        verb = words[-1].rstrip(".")  # Verb is typically the last word
+        object_word = words[1]  # Assumes object immediately follows subject
+        if subject in subject_rules and object_word.endswith("ව"):  # Objects often end with "ව"
+            # No action needed, SVO order is valid
+            pass
+        else:
+            corrections.append(
+                f"The sentence should follow a Subject-Verb-Object order. Current structure: {sentence}"
+            )
+
+    # Rule 3: Tense Consistency
+    tense_indicators = {"මි": "present", "මු": "present", "ගියේය": "past", "යයි": "future"}
+    tense_errors = []
+    for word in words:
+        for ending, tense in tense_indicators.items():
+            if word.endswith(ending):
+                if tense_errors and tense != tense_errors[0]:
+                    tense_errors.append(tense)
+                elif not tense_errors:
+                    tense_errors.append(tense)
+    if len(set(tense_errors)) > 1:
+        corrections.append(
+            f"Tense inconsistency detected in the sentence: {sentence}. Ensure all verbs are in the same tense."
+        )
+
+    # Rule 4: Punctuation Usage
+    if not sentence.endswith("."):
+        corrected_sentence = sentence + "."
+        corrections.append("The sentence should end with a period.")
+
+    # Consolidate results
+    if corrections:
+        return False, " | ".join(corrections), corrected_sentence
+
+    return True, None, corrected_sentence
 
 
 class GrammarChecker:
@@ -115,11 +159,11 @@ class GrammarChecker:
 
 # Sample sentences for testing
 sentences = [
-    "අපි ගමනට ගියේය.",  # Rule should trigger
+    "අපි ගමට ගියෙමු. ඔහු පාසලට ගියා. මම පොතක් කියවමි. ඇය ගෙදරට යනව. ඔවුන් ගමක නතර විය. අපි ආහාර සකසා ගත්තෙය. මගේ මිතුරා කාමරයේ සිටියා. ඔවුන් ගමනක් සූදානම් කළා. අපි වත්තෙ කටයුත්තක් කරා. ඇය පොතක් උගන්වමින් සිටියා",  # Rule should trigger
     "අපි ගමට ගියමු.",  # Rule should pass
     "මම පොත කියවයි.",  # Rule should trigger
     "මම ගමට ගියමි.",  # Rule should pass
-    "ඇය පොත කියවමි."  # Should be processed by ML grammar checker
+    "ඇය පොත කියවයි."  # Should be processed by ML grammar checker
 ]
 
 # Initialize grammar checker
