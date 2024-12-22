@@ -37,7 +37,7 @@ sentences = [
     "අපි ගමට ගියමු.",  # Rule should pass
     "මම පොත කියවයි.",  # Rule should trigger
     "මම ගමට ගියමි.",  # Rule should pass
-    "ඇය පොත කියවයි."  # Should be processed by ML-based grammar checker
+    "ඇය පොත කියවමි."  # Should be processed by ML-based grammar checker
 ]
 
 # Initialize the grammar checker
