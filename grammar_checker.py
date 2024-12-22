@@ -6,7 +6,7 @@ import pandas as pd
 
 
 class GrammarChecker:
-    def __init__(self, dataset_path="data/sinhala_grammar_checker_dataset.csv"):
+    def __init__(self, dataset_path="data/sinhala_grammar_checker_large_dataset.csv"):
         # Load the dataset
         self.data = pd.read_csv(dataset_path, encoding='utf-8-sig')
         self.vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 2))  # Use TF-IDF Vectorizer
@@ -29,39 +29,17 @@ class GrammarChecker:
         print("Grammar Checker Model Accuracy:", accuracy_score(y_test, y_pred))
         print("Classification Report:\n", classification_report(y_test, y_pred))
 
-    def apply_rules(self, sentence):
-        """
-        Apply predefined grammar rules to the sentence and suggest corrections.
-        """
-        rules = [
-            # Rule: If the sentence starts with 'අපි', it should end with 'මු'
-            (
-                lambda s: s.startswith("අපි") and not s.endswith("මු."),
-                "If the sentence starts with 'අපි', it should end with 'මු.'",
-                lambda s: s.rstrip(".") + " මු."
-            ),
-        ]
-
-        for condition, message, correction in rules:
-            if condition(sentence):
-                print(f"Rule Triggered: {message}")
-                suggested_correction = correction(sentence)
-                return False, message, suggested_correction
-
-        return True, None, None
-
     def check_grammar(self, sentence):
         """
-        Check grammar using both rule-based and ML approaches, and suggest corrections.
+        Check grammar using an ML-based approach.
         """
-        # Apply rule-based checks first
-        is_valid, rule_message, suggestion = self.apply_rules(sentence)
-        if not is_valid:
-            return f"Incorrect (Rule Violation): {rule_message}\nSuggested Correction: {suggestion}"
-
-        # ML-based grammar checking
+        # Transform the sentence into a feature vector
         sentence_vec = self.vectorizer.transform([sentence])
+
+        # Predict using the trained model
         prediction = self.model.predict(sentence_vec)
+
+        # Return result based on the prediction
         if prediction[0] == 1:
             return "Correct"
         else:
