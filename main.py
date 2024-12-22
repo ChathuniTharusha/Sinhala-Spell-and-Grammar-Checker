@@ -1,11 +1,10 @@
 from grammar_checker import GrammarChecker
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
+from sklearn.metrics import accuracy_score
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
@@ -58,9 +57,10 @@ class GrammarChecker:
         self.model = LogisticRegression(class_weight='balanced', random_state=42)
         self.model.fit(X_train_vec, y_train)
 
-        # Initialize Flan-T5 model and tokenizer
-        self.tokenizer_flant5 = AutoTokenizer.from_pretrained("google/flan-t5-small")
-        self.model_flant5 = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
+        # Store the test data for accuracy evaluation
+        self.X_test = X_test
+        self.y_test = y_test
+        self.X_test_vec = X_test_vec
 
     def ml_grammar_checker(self, sentence):
         """
@@ -70,19 +70,9 @@ class GrammarChecker:
         prediction = self.model.predict(sentence_vec)
         return "Correct" if prediction[0] == 1 else "Incorrect (ML-Based)"
 
-    def flant5_grammar_checker(self, sentence):
-        """
-        Use Flan-T5 model to check grammar.
-        """
-        inputs = self.tokenizer_flant5.encode("grammar correction: " + sentence, return_tensors="pt", truncation=True,
-                                              padding=True)
-        outputs = self.model_flant5.generate(inputs, max_length=100)
-        corrected_sentence = self.tokenizer_flant5.decode(outputs[0], skip_special_tokens=True)
-        return corrected_sentence
-
     def check_grammar(self, sentence):
         """
-        Check grammar using rule-based, ML-based, and Flan-T5-based approaches.
+        Check grammar using rule-based and ML-based approaches.
         """
         # Step 1: Apply rules
         valid, message, corrected_sentence = apply_basic_rules(sentence)
@@ -92,15 +82,36 @@ class GrammarChecker:
         # Step 2: Apply ML-based grammar checking
         ml_result = self.ml_grammar_checker(corrected_sentence)
 
-        # Step 3: Apply Flan-T5-based grammar checking
-        flant5_result = self.flant5_grammar_checker(corrected_sentence)
-
         return {
             "Rule-Based Result": "Valid" if valid else "Invalid",
             "ML-Based Result": ml_result,
-            "Flan-T5-Based Result": flant5_result
+            "Corrected Sentence": corrected_sentence
         }
 
+    def evaluate_accuracy(self):
+        """
+        Evaluate and print accuracy for both rule-based and ML-based grammar checking.
+        """
+        rule_based_correct = 0
+        ml_based_correct = 0
+        total_sentences = len(self.X_test)
+
+        # Evaluate Rule-based approach
+        for sentence in self.X_test:
+            rule_valid, _, _ = apply_basic_rules(sentence)
+            if rule_valid:
+                rule_based_correct += 1
+
+        # Evaluate ML-based approach
+        ml_predictions = self.model.predict(self.X_test_vec)
+        ml_based_correct = sum(ml_predictions == self.y_test)
+
+        # Calculate accuracies
+        rule_based_accuracy = rule_based_correct / total_sentences * 100
+        ml_based_accuracy = ml_based_correct / total_sentences * 100
+
+        print(f"Rule-Based Accuracy: {rule_based_accuracy:.2f}%")
+        print(f"ML-Based Accuracy: {ml_based_accuracy:.2f}%")
 
 # Sample sentences for testing
 sentences = [
@@ -108,7 +119,7 @@ sentences = [
     "අපි ගමට ගියමු.",  # Rule should pass
     "මම පොත කියවයි.",  # Rule should trigger
     "මම ගමට ගියමි.",  # Rule should pass
-    "ඇය පොත කියවමි."  # Should be processed by ML and Flan-T5-based grammar checkers
+    "ඇය පොත කියවමි."  # Should be processed by ML grammar checker
 ]
 
 # Initialize grammar checker
@@ -131,5 +142,7 @@ for sentence in sentences:
 
     print(f"Rule-Based Result: {results['Rule-Based Result']}")
     print(f"ML-Based Grammar Checker Result: {results['ML-Based Result']}")
-    print(f"Flan-T5-Based Grammar Checker Result: {results['Flan-T5-Based Result']}")
     print("-" * 50)
+
+# Calculate and print accuracy
+grammar_checker.evaluate_accuracy()
