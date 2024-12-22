@@ -34,7 +34,7 @@ def process_paragraph(paragraph, dictionary):
     return misspelled_words
 
 # Function to print the suggestions for a given paragraph
-def check_spelling_and_print(paragraph, dictionary_file='Datasets/preprocessed_dictionary.csv'):
+def check_spelling_and_print(paragraph, dictionary_file='data/preprocessed_dictionary.csv'):
     # Load the dictionary from the CSV file
     dictionary = load_dictionary_from_csv(dictionary_file)
 
