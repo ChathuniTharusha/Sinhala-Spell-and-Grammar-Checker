@@ -5,7 +5,7 @@ import random
 # Function to generate random correct and incorrect Sinhala sentences
 def generate_sinhala_sentences(num_correct, num_incorrect):
     correct_sentences = [
-        "අපි ගමට ගියෙයමු.",
+        "අපි ගමට ගියෙමු.",
         "ඔහු පාසලට ගියෙය.",
         "මම පොතක් කියවමි.",
         "ඇය ගෙදරට ආවා.",
