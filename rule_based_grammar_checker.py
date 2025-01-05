@@ -1,4 +1,6 @@
-from spell_checker import check_spelling_and_print
+from sklearn.metrics import accuracy_score, classification_report
+import pandas as pd
+
 class RuleBasedGrammarChecker:
     def __init__(self):
         # Define rules for specific subjects
@@ -14,17 +16,16 @@ class RuleBasedGrammarChecker:
         """
         Apply grammar rules based on subject and verb endings.
         """
-        # Check if the sentence starts with a defined subject
         for subject, correct_ending in self.subject_rules.items():
             if sentence.startswith(subject):
                 words = sentence.split()
                 if len(words) > 1:  # Ensure there's a verb to process
                     verb = words[-1].rstrip(".")  # Remove period for processing
                     if not verb.endswith(correct_ending.rstrip(".")):
-                        corrected_verb = verb.rstrip("මුමියි.") + correct_ending.rstrip(".")
+                        corrected_verb = verb[:-len(correct_ending.rstrip("."))] + correct_ending.rstrip(".")
                         corrected_sentence = " ".join(words[:-1] + [corrected_verb]) + "."
                         return False, (
-                            f"If the sentence starts with '{subject}', it should end with '{correct_ending}'."
+                            f"If the sentence starts with '{subject}', the verb should end with '{correct_ending}'."
                         ), corrected_sentence
 
         return True, None, sentence
@@ -49,14 +50,44 @@ class RuleBasedGrammarChecker:
 
         return results
 
+    def evaluate_grammar_checker(self, dataset_path):
+        """
+        Evaluate the rule-based grammar checker on a labeled dataset.
+        """
+        # Load dataset
+        data = pd.read_csv(dataset_path, encoding='utf-8-sig')
+
+        # Initialize lists for ground truth and predictions
+        ground_truth = data['Label'].apply(lambda x: "Valid" if x == "Correct" else "Invalid").tolist()
+        predictions = []
+
+        # Run the checker on each sentence
+        for sentence in data['Sentence']:
+            result = self.check_grammar(sentence)
+            # Check if all sentences in the result are valid
+            overall_result = "Valid" if all(r["Rule-Based Result"] == "Valid" for r in result) else "Invalid"
+            predictions.append(overall_result)
+
+        # Calculate accuracy and classification report
+        accuracy = accuracy_score(ground_truth, predictions)
+        report = classification_report(ground_truth, predictions, target_names=["Invalid", "Valid"])
+
+        print(f"Rule-Based Accuracy: {accuracy * 100:.2f}%")
+        print("\nClassification Report:\n", report)
+
 
 # Sample Usage
 if __name__ == "__main__":
     rule_checker = RuleBasedGrammarChecker()
-    input_text = ("අපි ගමට ගියෙය. ඔහු පාසලට ගියෙය. මම පොතක් කියවයි. ඇය ගෙදරට ආවා. ඔවුන් ගමනක් සූදානම් කළා. අපි ආහාර සකසා ගත්තෙමු. මගේ මිතුරා කාමරයේ සිටියා. ඔවුන් ගමක නතර විය. අපි වත්තෙ කටයුත්තක් කළා. ඇය පොතක් උගන්වමින් සිටියෙය.")
+
+    # Test grammar checker with multi-sentence input
+    input_text = (
+        "අපි ගමට ගියෙය. ඔහු පාසලට ගියෙය. මම පොතක් කියවයි. ඇය ගෙදරට ආවා. "
+        "ඔවුන් ගමනක් සූදානම් කළා. අපි ආහාර සකසා ගත්තෙමු. මගේ මිතුරා කාමරයේ සිටියා. "
+        "ඔවුන් ගමක නතර විය. අපි වත්තෙ කටයුත්තක් කළා. ඇය පොතක් උගන්වමින් සිටියෙය."
+    )
 
     results = rule_checker.check_grammar(input_text)
-
     for result in results:
         print(f"Original Sentence: {result['Original Sentence']}")
         print(f"Rule-Based Result: {result['Rule-Based Result']}")
@@ -64,4 +95,7 @@ if __name__ == "__main__":
             print(f"Violation Message: {result['Violation Message']}")
             print(f"Suggested Correction: {result['Suggested Correction']}")
         print("-" * 50)
-check_spelling_and_print(input_text)
+
+    # Evaluate rule-based grammar checker on labeled dataset
+    dataset_path = "data/sinhala_grammar_checker_large_dataset.csv"  # Replace with your dataset path
+    rule_checker.evaluate_grammar_checker(dataset_path)
